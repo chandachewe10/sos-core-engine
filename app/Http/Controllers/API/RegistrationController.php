@@ -56,7 +56,7 @@ class RegistrationController extends Controller
             // send OTP notification via email
             $otpCode = rand(100000, 999999);
             $user->otp_code = $otpCode;
-            $user->otp_expires_at = now()->addMinutes(10);
+            $user->otp_expires_at = now()->addMinutes(5);
             $user->save();
 
             $user->notify(new OtpNotification($otpCode));
