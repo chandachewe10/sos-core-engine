@@ -27,7 +27,7 @@ class UserController extends Controller
                 'message' => 'User retrieved successfully',
                 'data' => [
 
-                    'phone' => $user->phone,
+                    'phone' => $user->phone_number,
                     'email' => $user->email ?? NULL,
                     'access_token' => $currentToken,
                     'token_type' => 'Bearer',
@@ -55,8 +55,8 @@ class UserController extends Controller
                 'license_number' => 'required|string|max:255',
                 'files.*' => 'file|max:2048',
             ]);
-            $accessTokenExpiresAt = Carbon::now()->addDays(1);
-            $refreshTokenExpiresAt = Carbon::now()->addDays(7);
+            $accessTokenExpiresAt = Carbon::now()->addDays(7);
+            $refreshTokenExpiresAt = Carbon::now()->addDays(14);
             $user = User::create([
                 'name' => $request->name,
                 'medical_info' => $request->medical_info,

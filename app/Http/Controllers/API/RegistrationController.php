@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use App\Notifications\OtpNotification;
 use Laravel\Sanctum\PersonalAccessToken;
+use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use Carbon\Carbon;
 
@@ -37,21 +38,27 @@ class RegistrationController extends Controller
         try {
 
 
-            $request->validate([
+            $validator = Validator::make($request->all(), [
 
-                'phone' => 'required|numeric|unique:users,phone_number',
+                'phone_number' => 'required|numeric|unique:users,phone_number',
 
             ]);
 
-
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
             $user = User::create([
                 'phone_number' => $request->phone_number,
                 'password' => bcrypt('qwertyuiop'),
             ]);
 
 
-            $accessTokenExpiresAt = Carbon::now()->addDays(1);
-            $refreshTokenExpiresAt = Carbon::now()->addDays(7);
+            $accessTokenExpiresAt = Carbon::now()->addDays(7);
+            $refreshTokenExpiresAt = Carbon::now()->addDays(14);
 
             // Create access and refresh tokens
             $accessToken = $user->createToken('access_token', ['*'], $accessTokenExpiresAt)->plainTextToken;
@@ -70,7 +77,7 @@ class RegistrationController extends Controller
             $user->notify(new OtpNotification($otpCode));
 
             //  send OTP notification via sms
-            $this->sendOtpSms($request->phone, $otpCode);
+            $this->sendOtpSms($request->phone_number, $otpCode);
 
 
             return response()->json([
@@ -78,7 +85,7 @@ class RegistrationController extends Controller
                 'message' => 'User registered successfully',
                 'data' => [
 
-                    'phone' => $user->phone,
+                    'phone' => $user->phone_number,
                     'email' => $user->email ?? NULL,
                     'access_token' => $accessToken,
                     'access_token_expires_at' => $accessTokenExpiresAt,
@@ -135,7 +142,7 @@ class RegistrationController extends Controller
 
 
 
-     public function refreshToken(Request $request)
+    public function refreshToken(Request $request)
     {
         $currentRefreshToken = $request->bearerToken();
         $refreshToken = PersonalAccessToken::findToken($currentRefreshToken);
@@ -147,8 +154,8 @@ class RegistrationController extends Controller
         $user = $refreshToken->tokenable;
         $refreshToken->delete();
 
-        $accessTokenExpiresAt = Carbon::now()->addDays(1);
-        $refreshTokenExpiresAt = Carbon::now()->addDays(7);
+        $accessTokenExpiresAt = Carbon::now()->addDays(7);
+        $refreshTokenExpiresAt = Carbon::now()->addDays(14);
 
         $newAccessToken = $user->createToken('access_token', ['*'], $accessTokenExpiresAt)->plainTextToken;
         $newRefreshToken = $user->createToken('refresh_token', ['refresh'], $refreshTokenExpiresAt)->plainTextToken;
@@ -195,16 +202,16 @@ class RegistrationController extends Controller
         try {
             $request->validate([
                 'otp_code' => 'required|numeric|exists:users,otp_code',
-                'email' => 'required|email|exists:users,email',
+                'phone_number' => 'required|numeric|exists:users,phone_number',
             ]);
 
-            $user = User::where('email', $request->email)->first();
+            $user = User::where('phone_number', $request->phone_number)->first();
 
             if (!$user || $user->otp_code !== $request->otp_code || now()->greaterThan($user->otp_expires_at)) {
                 return response()->json(['error' => 'Invalid or expired OTP code'], 422);
             }
 
-            $user->is_verified = true;
+            $user->is_onboarded = true;
             $user->otp_code = null;
             $user->otp_expires_at = null;
             $user->save();

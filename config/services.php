@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+     'swiftsms' => [
+        'baseUri' => env('SWIFT_SMS_BASE_URI'),
+        'endpoint' => env('SWIFT_SMS_ENDPOINT'),
+        'token' =>  env('SWIFT_SMS_TOKEN'),
+        'senderId' =>  env('SWIFT_SMS_SENDERID'),
+    ],
+
 ];
