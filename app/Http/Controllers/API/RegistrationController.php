@@ -7,7 +7,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use App\Notifications\OtpNotification;
+use Laravel\Sanctum\PersonalAccessToken;
 use App\Models\User;
+use Carbon\Carbon;
 
 class RegistrationController extends Controller
 {
@@ -48,7 +50,13 @@ class RegistrationController extends Controller
             ]);
 
 
-            $token = $user->createToken('react-client-token')->plainTextToken;
+            $accessTokenExpiresAt = Carbon::now()->addDays(1);
+            $refreshTokenExpiresAt = Carbon::now()->addDays(7);
+
+            // Create access and refresh tokens
+            $accessToken = $user->createToken('access_token', ['*'], $accessTokenExpiresAt)->plainTextToken;
+            $refreshToken = $user->createToken('refresh_token', ['refresh'], $refreshTokenExpiresAt)->plainTextToken;
+
 
 
 
@@ -69,9 +77,15 @@ class RegistrationController extends Controller
                 'success' => true,
                 'message' => 'User registered successfully',
                 'data' => [
-                    'email' => $user->email,
+
                     'phone' => $user->phone,
-                    'token' => $token,
+                    'email' => $user->email ?? NULL,
+                    'access_token' => $accessToken,
+                    'access_token_expires_at' => $accessTokenExpiresAt,
+                    'refresh_token' => $refreshToken,
+                    'refresh_token_expires_at' => $refreshTokenExpiresAt,
+                    'token_type' => 'Bearer',
+
 
                 ]
             ], 201);
@@ -118,9 +132,40 @@ class RegistrationController extends Controller
     }
 
 
+
+
+
+     public function refreshToken(Request $request)
+    {
+        $currentRefreshToken = $request->bearerToken();
+        $refreshToken = PersonalAccessToken::findToken($currentRefreshToken);
+
+        if (!$refreshToken || !$refreshToken->can('refresh') || $refreshToken->expires_at->isPast()) {
+            return response()->json(['error' => 'Invalid or expired refresh token'], 401);
+        }
+
+        $user = $refreshToken->tokenable;
+        $refreshToken->delete();
+
+        $accessTokenExpiresAt = Carbon::now()->addDays(1);
+        $refreshTokenExpiresAt = Carbon::now()->addDays(7);
+
+        $newAccessToken = $user->createToken('access_token', ['*'], $accessTokenExpiresAt)->plainTextToken;
+        $newRefreshToken = $user->createToken('refresh_token', ['refresh'], $refreshTokenExpiresAt)->plainTextToken;
+
+        return response()->json([
+            'access_token' => $newAccessToken,
+            'access_token_expires_at' => $accessTokenExpiresAt,
+            'refresh_token' => $newRefreshToken,
+            'refresh_token_expires_at' => $refreshTokenExpiresAt,
+            'token_type' => 'Bearer',
+        ]);
+    }
+
+
     public function sendOtpSms($phoneNumber, $otp)
     {
-        $message = 'Your OTP verification code is ' . $otp . ' your OTP is valid for 10 minutes.';
+        $message = 'Your OTP verification code is ' . $otp . ' your OTP is valid for 5 minutes.';
 
         $base_uri = config('services.swiftsms.baseUri');
         $endpoint = config('services.swiftsms.endpoint');
