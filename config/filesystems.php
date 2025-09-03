@@ -38,6 +38,16 @@ return [
             'report' => false,
         ],
 
+         'normaluser' => [
+            'driver' => 'local',
+            'root' => public_path('NormalUsers'),
+            'url' => env('APP_URL').'/NormalUsers',
+            'visibility' => 'public',
+            'serve' => true,
+            'throw' => false,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
