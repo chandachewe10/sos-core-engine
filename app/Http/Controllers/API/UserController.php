@@ -29,6 +29,7 @@ class UserController extends Controller
 
                     'phone' => $user->phone_number,
                     'email' => $user->email ?? NULL,
+                    'role' => $user->getRoleNames()->first() ?? NULL,
                     'access_token' => $currentToken,
                     'token_type' => 'Bearer',
 
