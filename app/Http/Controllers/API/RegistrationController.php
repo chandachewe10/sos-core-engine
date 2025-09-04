@@ -56,7 +56,7 @@ class RegistrationController extends Controller
                 'password' => bcrypt('qwertyuiop'),
             ]);
 
-
+            $user->assignRole('normal_user');
             $accessTokenExpiresAt = Carbon::now()->addDays(7);
             $refreshTokenExpiresAt = Carbon::now()->addDays(14);
 
