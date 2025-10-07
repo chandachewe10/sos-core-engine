@@ -17,10 +17,10 @@ class StaffTable
         return $table
             ->columns([
                 TextColumn::make('phone')
-                ->badge()
+                    ->badge()
                     ->searchable(),
                 TextColumn::make('full_name')
-                ->badge()
+                    ->badge()
                     ->searchable(),
                 TextColumn::make('email')
                     ->label('Email address')
@@ -28,9 +28,9 @@ class StaffTable
                 TextColumn::make('address')
                     ->searchable(),
                 TextColumn::make('hpcz_number')
-                ->badge()
+                    ->badge()
                     ->searchable(),
-               
+
                 IconColumn::make('is_approved')
                     ->boolean(),
                 TextColumn::make('created_at')

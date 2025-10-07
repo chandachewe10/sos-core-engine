@@ -69,7 +69,8 @@ class StaffController extends Controller
                 'email' => $validatedData['email'] ?? null,
                 'address' => $validatedData['address'],
                 'password' => bcrypt($validatedData['password']),
-                'hpcz_number' => $validatedData['hpczNumber'] ?? null
+                'hpcz_number' => $validatedData['hpczNumber'] ?? null,
+                'is_approved' => 2
             ]);
 
             // Process each base64 file
