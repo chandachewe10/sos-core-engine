@@ -121,7 +121,7 @@ class StaffController extends Controller
             Log::error('Error in store method: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage(),
+                'message' => 'Cant process your request right now ensure you are not entring duplicate records',
                 'error' => $e->getMessage(),
             ], 500);
         }
