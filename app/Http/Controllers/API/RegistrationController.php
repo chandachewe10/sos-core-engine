@@ -56,7 +56,7 @@ class RegistrationController extends Controller
                 'password' => bcrypt('qwertyuiop'),
             ]);
 
-            $user->assignRole('normal_user');
+           // $user->assignRole('normal_user');
             $accessTokenExpiresAt = Carbon::now()->addDays(7);
             $refreshTokenExpiresAt = Carbon::now()->addDays(14);
 
@@ -100,7 +100,7 @@ class RegistrationController extends Controller
             Log::error('Error in store method: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'An error occurred while processing your request',
+                'message' => $e->getMessage(),
                 'error' => $e->getMessage(),
             ], 500);
         }
@@ -224,7 +224,7 @@ class RegistrationController extends Controller
             Log::error('Error in verifyOtp method: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'An error occurred while processing your request',
+                'message' => $e->getMessage(),
                 'error' => $e->getMessage(),
             ], 500);
         }

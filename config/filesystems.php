@@ -38,6 +38,15 @@ return [
             'report' => false,
         ],
 
+        'staffs' => [
+            'driver' => 'local',
+            'root' => public_path('STAFFSFILES'),
+            'url' => env('APP_URL').'/STAFFSFILES',
+            'visibility' => 'public',
+            'throw' => false,
+            'report' => false,
+        ],
+
          'normaluser' => [
             'driver' => 'local',
             'root' => public_path('NormalUsers'),

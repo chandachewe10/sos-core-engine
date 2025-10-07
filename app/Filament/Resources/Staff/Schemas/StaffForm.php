@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Staff\Schemas;
 
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
@@ -28,12 +29,13 @@ class StaffForm
                     ->required(),
                 TextInput::make('hpcz_number')
                     ->default(null),
-                TextInput::make('nrc_uri')
-                    ->default(null),
-                TextInput::make('selfie_uri')
-                    ->default(null),
-                TextInput::make('signature_uri')
-                    ->default(null),
+                FileUpload::make('nrc_uri')
+                    ->label('NRC Document'),
+                FileUpload::make('selfie_uri')
+                    ->label('Profile Picture'),
+                FileUpload::make('signature_uri')
+                    ->label('Signature Image'),
+               
                 Toggle::make('is_approved')
                     ->required(),
             ]);

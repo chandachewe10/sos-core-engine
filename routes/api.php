@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\RegistrationController;
+use App\Http\Controllers\API\StaffController;
 use App\Http\Controllers\API\UserController;
 
 Route::get('/user', function (Request $request) {
@@ -10,6 +11,7 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::resource('signup', RegistrationController::class)->only(['index', 'store', 'update', 'destroy']);
+Route::resource('createMedicalStaff', StaffController::class)->only(['index', 'store', 'update', 'destroy']);
 Route::post('/refresh', [RegistrationController::class, 'refreshToken'])
 ->middleware('auth:sanctum');
 Route::post('/verifyOtp', [RegistrationController::class, 'verifyOtp'])
