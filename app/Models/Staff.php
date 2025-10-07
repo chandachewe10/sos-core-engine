@@ -20,6 +20,7 @@ class Staff extends Model implements HasMedia
         'selfie_uri',
         'signature_uri',
         'is_approved',
+        'has_accepted_terms_and_conditions'
     ];
     
 }

@@ -71,6 +71,29 @@ class StaffInfolist
                                 ->visible(fn ($record) => $record->hasMedia('selfie'))
                                 ->outlined()
                                 ->color('primary'),
+                                
+                        ]),
+
+
+                        Actions::make([
+                            Action::make('view_signature')
+                                ->label('View Signature')
+                                ->icon('heroicon-o-eye')
+                                ->url(fn ($record) => $record->getFirstMediaUrl('signature'))
+                                ->openUrlInNewTab()
+                                ->visible(fn ($record) => $record->hasMedia('signature'))
+                                ->outlined()
+                                ->color('secondary'),
+                            
+                            Action::make('download_signature')
+                                ->label('Download Signature')
+                                ->icon('heroicon-o-arrow-down-tray')
+                                ->url(fn ($record) => $record->getFirstMediaUrl('signature'))
+                                ->openUrlInNewTab()
+                                ->visible(fn ($record) => $record->hasMedia('signature'))
+                                ->outlined()
+                                ->color('primary'),
+                                
                         ]),
                     ])
                     ->collapsible(), // Optional: make it collapsible

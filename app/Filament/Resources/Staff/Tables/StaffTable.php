@@ -27,12 +27,7 @@ class StaffTable
                     ->searchable(),
                 TextColumn::make('hpcz_number')
                     ->searchable(),
-                TextColumn::make('nrc_uri')
-                    ->searchable(),
-                TextColumn::make('selfie_uri')
-                    ->searchable(),
-                TextColumn::make('signature_uri')
-                    ->searchable(),
+               
                 IconColumn::make('is_approved')
                     ->boolean(),
                 TextColumn::make('created_at')

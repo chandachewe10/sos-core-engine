@@ -26,7 +26,7 @@ class StaffForm
                     ->default(null),
                 TextInput::make('password')
                     ->password()
-                    ->required(),
+                    ,
                 TextInput::make('hpcz_number')
                     ->default(null),
                 FileUpload::make('nrc_uri')
