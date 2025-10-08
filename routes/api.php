@@ -75,12 +75,12 @@ Route::post('/staff-login', function (Request $request) {
     ]);
 
     $user = User::where('email', $request->email)->first();
-    $isStaff = Staff::where('email', $request->email)->first();
+    $isStaff = Staff::where('email', $request->email)->where('is_approved',1)->first();
     if (!$user || !$isStaff || !Hash::check($request->password, $user->password)) {
         return response()->json(['message' => 'Invalid credentials'], 401);
     }
 
-    
+
     $token = $user->createToken('staff-token')->plainTextToken;
 
     return response()->json([
