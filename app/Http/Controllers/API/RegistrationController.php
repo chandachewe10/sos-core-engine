@@ -40,7 +40,10 @@ class RegistrationController extends Controller
 
             $validator = Validator::make($request->all(), [
 
-                'phone_number' => 'required|numeric|unique:users,phone_number',
+                'phone_number' => [
+                    'required',
+                    'regex:/^(?:\+?26)?0?(95|96|97|75|76|77)\d{7}$/'
+                ],
 
             ]);
 
@@ -56,7 +59,7 @@ class RegistrationController extends Controller
                 'password' => bcrypt('qwertyuiop'),
             ]);
 
-           // $user->assignRole('normal_user');
+            // $user->assignRole('normal_user');
             $accessTokenExpiresAt = Carbon::now()->addDays(7);
             $refreshTokenExpiresAt = Carbon::now()->addDays(14);
 
