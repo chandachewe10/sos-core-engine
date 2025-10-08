@@ -32,7 +32,22 @@ class StaffTable
                     ->searchable(),
 
                 IconColumn::make('is_approved')
-                    ->boolean(),
+                    ->label('Status')
+                    ->getStateUsing(function ($record) {
+                        return match ($record->is_approved) {
+                            2 => 'pending',
+                            1 => 'approved',
+                            3 => 'rejected',
+                        };
+                    })
+                  //  ->boolean()
+                    ->trueIcon('heroicon-o-check')
+                    ->falseIcon('heroicon-o-x')
+                    ->colors([
+                        'primary' => fn($state) => $state === 'pending',
+                        'success' => fn($state) => $state === 'approved',
+                        'danger' => fn($state) => $state === 'rejected',
+                    ]),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
