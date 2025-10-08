@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('nrc_uri')->nullable();
             $table->string('selfie_uri')->nullable();
             $table->string('signature_uri')->nullable();
-            $table->boolean('is_approved')->default(false);
+            $table->integer('is_approved')->default(2);
             $table->timestamps();
         });
     }
