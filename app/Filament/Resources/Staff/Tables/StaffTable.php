@@ -34,7 +34,7 @@ class StaffTable
                 IconColumn::make('is_approved')
                     ->label('Status')
                     ->getStateUsing(function ($record) {
-                        return match ($record->is_approved) {
+                        return match((int)$record->is_approved) {
                             2 => 'pending',
                             1 => 'approved',
                             3 => 'rejected',
