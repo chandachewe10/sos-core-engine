@@ -208,7 +208,7 @@ class RegistrationController extends Controller
                 'phone_number' => 'required|numeric|exists:users,phone_number',
             ]);
 
-            $user = User::where('phone_number', $request->phone_number)->first();
+            $user = User::where('phone_number', $request->phone_number)->latest()->first();
 
             if (!$user || $user->otp_code !== $request->otp_code || now()->greaterThan($user->otp_expires_at)) {
                 return response()->json(['error' => 'Invalid or expired OTP code'], 422);
