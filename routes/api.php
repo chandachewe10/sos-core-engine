@@ -6,6 +6,7 @@ use App\Http\Controllers\API\RegistrationController;
 use App\Http\Controllers\API\SignatureController;
 use App\Http\Controllers\API\StaffController;
 use App\Http\Controllers\API\UserController;
+use Illuminate\Support\Facades\Password;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -21,4 +22,16 @@ Route::post('/verifyOtp', [RegistrationController::class, 'verifyOtp'])
 Route::get('/me', [UserController::class, 'me'])
 ->middleware('auth:sanctum');
 Route::post('/onboard', [UserController::class, 'onboard']);
+
+Route::post('/forgot-password', function (Request $request) {
+    $request->validate(['email' => 'required|email']);
+
+    $status = Password::sendResetLink(
+        $request->only('email')
+    );
+
+    return $status === Password::RESET_LINK_SENT
+        ? response()->json(['message' => 'Password reset link sent to your email.'])
+        : response()->json(['message' => 'Unable to send reset link.'], 400);
+});
 
