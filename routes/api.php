@@ -9,6 +9,8 @@ use App\Http\Controllers\API\UserController;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
+use App\Models\Staff;
+use Illuminate\Support\Facades\Hash;
 
 
 Route::get('/user', function (Request $request) {
@@ -65,3 +67,25 @@ Route::post('/forgot-password', function (Request $request) {
     ], 400);
 });
 
+
+Route::post('/staff-login', function (Request $request) {
+    $request->validate([
+        'email' => 'required|email',
+        'password' => 'required|string|min:6',
+    ]);
+
+    $user = User::where('email', $request->email)->first();
+    $isStaff = Staff::where('email', $request->email)->first();
+    if (!$user || !$isStaff || !Hash::check($request->password, $user->password)) {
+        return response()->json(['message' => 'Invalid credentials'], 401);
+    }
+
+    
+    $token = $user->createToken('staff-token')->plainTextToken;
+
+    return response()->json([
+        'message' => 'Login successful',
+        'token' => $token,
+        'user' => $user
+    ]);
+});
