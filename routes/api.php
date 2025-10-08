@@ -7,6 +7,9 @@ use App\Http\Controllers\API\SignatureController;
 use App\Http\Controllers\API\StaffController;
 use App\Http\Controllers\API\UserController;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Validator;
+use App\Models\User;
+
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -24,14 +27,41 @@ Route::get('/me', [UserController::class, 'me'])
 Route::post('/onboard', [UserController::class, 'onboard']);
 
 Route::post('/forgot-password', function (Request $request) {
-    $request->validate(['email' => 'required|email']);
+    
+    $validator = Validator::make($request->all(), [
+        'email' => 'required|email',
+    ]);
 
-    $status = Password::sendResetLink(
-        $request->only('email')
-    );
+    if ($validator->fails()) {
+        return response()->json([
+            'success' => false,
+            'message' => $validator->errors()->first(),
+        ], 422);
+    }
 
-    return $status === Password::RESET_LINK_SENT
-        ? response()->json(['message' => 'Password reset link sent to your email.'])
-        : response()->json(['message' => 'Unable to send reset link.'], 400);
+    
+    $user = User::where('email', $request->email)->first();
+    if (!$user) {
+        return response()->json([
+            'success' => false,
+            'message' => 'We could not find a user with that email address.',
+        ], 404);
+    }
+
+    
+    $status = Password::sendResetLink($request->only('email'));
+
+    if ($status === Password::RESET_LINK_SENT) {
+        return response()->json([
+            'success' => true,
+            'message' => 'Password reset link sent to your email.',
+        ]);
+    }
+
+    
+    return response()->json([
+        'success' => false,
+        'message' => 'Unable to send reset link. Please try again later.',
+    ], 400);
 });
 
