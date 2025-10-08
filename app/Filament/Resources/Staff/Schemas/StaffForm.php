@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Staff\Schemas;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\Select;
 use Filament\Schemas\Schema;
 
 class StaffForm
@@ -25,19 +26,20 @@ class StaffForm
                 TextInput::make('address')
                     ->default(null),
                 TextInput::make('password')
-                    ->password()
-                    ,
+                    ->password(),
                 TextInput::make('hpcz_number')
                     ->default(null),
-                FileUpload::make('nrc_uri')
-                    ->label('NRC Document'),
-                FileUpload::make('selfie_uri')
-                    ->label('Profile Picture'),
-                FileUpload::make('signature_uri')
-                    ->label('Signature Image'),
-               
-                Toggle::make('is_approved')
-                    ->required(),
+
+
+                Select::make('is_approved')
+                    ->label('Approval Status')
+                    ->required()
+                    ->options([
+                        2 => 'Pending',
+                        1 => 'Approved',
+                        3 => 'Rejected',
+                    ])
+
             ]);
     }
 }
