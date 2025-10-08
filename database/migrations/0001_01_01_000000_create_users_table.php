@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('email')->nullable()->unique();
-            $table->string('phone_number')->nullable()->unique();
+            $table->string('phone_number')->nullable();
             $table->boolean('is_onboarded')->default(false);
             $table->boolean('medical_personnel_approved')->default(false);
             $table->timestamp('email_verified_at')->nullable();
