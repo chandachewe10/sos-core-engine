@@ -28,8 +28,10 @@ Route::get('/me', [UserController::class, 'me'])
 ->middleware('auth:sanctum');
 Route::post('/update-location', [StaffController::class, 'updateLocation'])
 ->middleware('auth:sanctum');
+Route::get('/active-staffs', [StaffController::class, 'listActiveStaffs'])
+->middleware('auth:sanctum');
 Route::post('/onboard', [UserController::class, 'onboard']);
-Route::get('/active-staffs', [StaffController::class, 'listActiveStaffs']);
+
 
 Route::post('/forgot-password', function (Request $request) {
     
@@ -92,6 +94,27 @@ Route::post('/staff-login', function (Request $request) {
         'user' => $user
     ]);
 });
+
+
+// routes/api.php
+Route::post('/emergency-help', function (Request $request) {
+    $validated = $request->validate([
+        'latitude' => 'required|numeric',
+        'longitude' => 'required|numeric',
+        'phone' => 'required|string',
+        'timestamp' => 'required|date',
+    ]);
+
+    // Process the emergency request
+    // Notify nearby staff, log the incident, etc.
+    
+    return response()->json([
+        'message' => 'Help request received',
+        'data' => $validated
+    ], 200);
+})
+->middleware('auth:sanctum');
+
 
 
 
