@@ -215,6 +215,26 @@ class StaffController extends Controller
 
 
 
+/**
+     * Return all active staff with location coordinates
+     */
+    public function listActiveStaffs()
+    {
+
+
+        $staffs = Staff::where('is_approved', 1)
+            ->whereNotNull('last_known_latitude')
+            ->whereNotNull('last_known_longitude')
+            ->select('id', 'full_name', 'phone', 'last_known_latitude', 'last_known_longitude')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'staffs' => $staffs,
+        ]);
+    }
+
+
     /**
      * Display the specified resource.
      */

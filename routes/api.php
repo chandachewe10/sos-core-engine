@@ -29,7 +29,7 @@ Route::get('/me', [UserController::class, 'me'])
 Route::post('/update-location', [StaffController::class, 'updateLocation'])
 ->middleware('auth:sanctum');
 Route::post('/onboard', [UserController::class, 'onboard']);
-
+Route::get('/active-staffs', [StaffController::class, 'listActiveStaffs']);
 
 Route::post('/forgot-password', function (Request $request) {
     
