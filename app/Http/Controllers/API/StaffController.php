@@ -190,6 +190,31 @@ class StaffController extends Controller
     }
 
 
+
+    public function updateLocation(Request $request)
+{
+    $request->validate([
+        'email' => 'required|email',
+        'latitude' => 'required|numeric',
+        'longitude' => 'required|numeric',
+    ]);
+
+    $staff = Staff::where('email', $request->email)->first();
+
+    if (!$staff) {
+        return response()->json(['message' => 'Staff not found'], 404);
+    }
+
+    $staff->update([
+        'last_known_latitude' => $request->latitude,
+        'last_known_longitude' => $request->longitude,
+    ]);
+
+    return response()->json(['message' => 'Location updated successfully']);
+}
+
+
+
     /**
      * Display the specified resource.
      */

@@ -26,7 +26,10 @@ Route::post('/verifyOtp', [RegistrationController::class, 'verifyOtp'])
 ->middleware('auth:sanctum');
 Route::get('/me', [UserController::class, 'me'])
 ->middleware('auth:sanctum');
+Route::post('/update-location', [StaffController::class, 'updateLocation'])
+->middleware('auth:sanctum');
 Route::post('/onboard', [UserController::class, 'onboard']);
+
 
 Route::post('/forgot-password', function (Request $request) {
     
@@ -89,3 +92,6 @@ Route::post('/staff-login', function (Request $request) {
         'user' => $user
     ]);
 });
+
+
+
