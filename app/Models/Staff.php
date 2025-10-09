@@ -8,7 +8,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 
 class Staff extends Model implements HasMedia
 {
-     use InteractsWithMedia;
+    use InteractsWithMedia;
 
     protected $fillable = [
         'phone',
@@ -20,7 +20,8 @@ class Staff extends Model implements HasMedia
         'selfie_uri',
         'signature_uri',
         'is_approved',
-        'has_accepted_terms_and_conditions'
+        'has_accepted_terms_and_conditions',
+        'last_known_latitude',
+        'last_known_longitude',
     ];
-    
 }
