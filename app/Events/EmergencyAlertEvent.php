@@ -20,6 +20,7 @@ class EmergencyAlertEvent implements ShouldBroadcast
     public $staff;
     public $emergency;
     public $distance;
+    public $staffUserId; 
 
     public function __construct($staff, $emergency, $distance)
     {
@@ -27,13 +28,16 @@ class EmergencyAlertEvent implements ShouldBroadcast
         $this->emergency = $emergency;
         $this->distance = $distance;
 
-        $staffEmail = Staff::findOrFail($this->staff->id);
-        $staffUserId = User::where('email', $staffEmail->email)->first()->id;
-        $channelName = 'emergency-staff-' . $staffUserId;
+        // Get the user ID from the staff email
+        $this->staffUserId = User::where('email', $staff->email)->first()->id;
+        
+        $channelName = 'emergency-staff-' . $this->staffUserId;
 
         Log::info('🚨 EmergencyAlertEvent Created', [
-            'staff_id' =>  $staffUserId,
+            'staff_id' => $this->staff->id,
+            'staff_user_id' => $this->staffUserId,
             'staff_name' => $staff->full_name,
+            'staff_email' => $staff->email,
             'victim_phone' => $emergency->phone,
             'distance_km' => $distance,
             'channel' => $channelName
@@ -42,13 +46,12 @@ class EmergencyAlertEvent implements ShouldBroadcast
 
     public function broadcastOn()
     {
-        $staffEmail = Staff::findOrFail($this->staff->id);
-        $staffUserId = User::where('email', $staffEmail->email)->first()->id;
-        $channelName = 'emergency-staff-' . $staffUserId;
+        $channelName = 'emergency-staff-' . $this->staffUserId;
         
         Log::info('📡 Broadcasting to channel', [
             'channel' => $channelName,
-            'staff_id' => $this->staff->id
+            'staff_id' => $this->staff->id,
+            'staff_user_id' => $this->staffUserId
         ]);
         
         // Send to staff-specific channel
@@ -71,7 +74,7 @@ class EmergencyAlertEvent implements ShouldBroadcast
             'emergency_id' => $this->emergency->id,
             'timestamp' => now()->toISOString(),
             'message' => '🚨 EMERGENCY: Immediate assistance required!',
-            'vibration_pattern' => 'sos' // Indicate unique vibration
+            'vibration_pattern' => 'sos' 
         ];
         
         Log::info('📦 Broadcast data prepared', $data);
