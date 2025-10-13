@@ -13,6 +13,7 @@ use App\Models\Staff;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use App\Events\EmergencyAlertEvent;
 
 
 Route::get('/user', function (Request $request) {
@@ -133,20 +134,19 @@ Route::post('/emergency-help', function (Request $request) {
     $victimPhone = $validated['phone'];
 
     // Get all active staff with location data
-    $staffMembers = Staff::where('is_active', true)
-        ->whereNotNull('last_known_latitude')
+    $staffMembers = \App\Models\Staff::whereNotNull('last_known_latitude')
         ->whereNotNull('last_known_longitude')
         ->get();
 
     // Calculate distances and find closest staff
     $staffWithDistances = $staffMembers->map(function ($staff) use ($victimLat, $victimLon) {
         $distance = calculateDistance(
-            $victimLat,
-            $victimLon,
-            $staff->last_known_latitude,
+            $victimLat, 
+            $victimLon, 
+            $staff->last_known_latitude, 
             $staff->last_known_longitude
         );
-
+        
         return [
             'staff' => $staff,
             'distance_km' => $distance
@@ -156,9 +156,8 @@ Route::post('/emergency-help', function (Request $request) {
     // Sort by closest distance
     $sortedStaff = $staffWithDistances->sortBy('distance_km');
 
-    // Get the closest staff member (or multiple)
+    // Get the closest staff member
     $closestStaff = $sortedStaff->first();
-    $topThreeClosest = $sortedStaff->take(3);
 
     // Log the emergency incident
     $emergency = \App\Models\EmergencyHelp::create([
@@ -167,29 +166,26 @@ Route::post('/emergency-help', function (Request $request) {
         'longitude' => $victimLon,
         'attended_by' => $closestStaff['staff']->id,
         'closest_staff_distance' => $closestStaff['distance_km'],
-
     ]);
 
-    // Option 1: Send SMS to closest staff
-    sendEmergencySMS($closestStaff['staff'], $emergency, $closestStaff['distance_km']);
+    // ✅ Trigger the Pusher event with unique vibration
+    broadcast(new EmergencyAlertEvent($closestStaff['staff'], $emergency, $closestStaff['distance_km']));
 
-    // Option 2: Make automated call to closest staff
-    makeEmergencyCall($closestStaff['staff'], $emergency);
-
-    // Option 3: Notify multiple closest staff
-    notifyMultipleStaff($topThreeClosest, $emergency);
+    // Also send SMS as backup
+    //sendEmergencySMS($closestStaff['staff'], $emergency, $closestStaff['distance_km']);
 
     return response()->json([
-        'message' => 'Help request received and closest staff notified',
+        'message' => 'Help request received and closest staff notified via real-time alert',
         'closest_staff' => [
             'name' => $closestStaff['staff']->full_name,
             'phone' => $closestStaff['staff']->phone,
             'distance_km' => round($closestStaff['distance_km'], 2),
         ],
         'emergency_id' => $emergency->id,
-        'data' => $validated
     ], 200);
 })->middleware('auth:sanctum');
+
+
 
 // Haversine formula to calculate distance in km
 function calculateDistance($lat1, $lon1, $lat2, $lon2)
@@ -235,45 +231,4 @@ function sendEmergencySMS($staff, $emergency, $distance)
     }
 }
 
-// Make automated call to staff member
-function makeEmergencyCall($staff, $emergency)
-{
-    $message = "Emergency alert. A person needs immediate assistance. " .
-        "Victim phone number is " . implode(' ', str_split($emergency->victim_phone)) . ". " .
-        "Please check your SMS for location details and respond immediately.";
-
-    try {
-        // Using Twilio for voice calls
-        Http::withHeaders([
-            'Authorization' => 'Basic ' . base64_encode(env('TWILIO_SID') . ':' . env('TWILIO_TOKEN'))
-        ])->post('https://api.twilio.com/2010-04-01/Accounts/' . env('TWILIO_SID') . '/Calls.json', [
-            'From' => env('TWILIO_PHONE_NUMBER'),
-            'To' => $staff->phone,
-            'Url' => route('emergency.voice.message'), // You'd create this route with TwiML
-            'Method' => 'POST'
-        ]);
-
-        Log::info("Emergency call initiated to staff: {$staff->full_name} at {$staff->phone}");
-    } catch (\Exception $e) {
-        Log::error("Failed to make call: " . $e->getMessage());
-    }
-}
-
-// Notify multiple staff members
-function notifyMultipleStaff($staffList, $emergency)
-{
-    foreach ($staffList as $staffData) {
-        $staff = $staffData['staff'];
-        $distance = $staffData['distance_km'];
-
-        sendEmergencySMS($staff, $emergency, $distance);
-
-        // You can also create notifications in your database
-        // \App\Models\StaffNotification::create([
-        //     'staff_id' => $staff->id,
-        //     'emergency_id' => $emergency->id,
-        //     'message' => "Emergency alert - You are " . round($distance, 2) . " km away",
-        //     'is_read' => false,
-        // ]);
-    }
-}
+            
