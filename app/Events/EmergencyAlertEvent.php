@@ -2,6 +2,8 @@
 
 namespace App\Events;
 
+use App\Models\Staff;
+use App\Models\User;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
@@ -35,7 +37,9 @@ class EmergencyAlertEvent implements ShouldBroadcast
 
     public function broadcastOn()
     {
-        $channelName = 'emergency-staff-' . $this->staff->id;
+        $staffEmail = Staff::findOrFail($this->staff->id);
+        $staffUserId = User::where('email', $staffEmail->email)->first()->id;
+        $channelName = 'emergency-staff-' . $staffUserId;
         
         Log::info('📡 Broadcasting to channel', [
             'channel' => $channelName,
