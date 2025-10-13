@@ -197,6 +197,7 @@ class StaffController extends Controller
         'email' => 'required|email',
         'latitude' => 'required|numeric',
         'longitude' => 'required|numeric',
+        'fcm_token' => 'sometimes|string',
     ]);
 
     $staff = Staff::where('email', $request->email)->first();
@@ -208,6 +209,7 @@ class StaffController extends Controller
     $staff->update([
         'last_known_latitude' => $request->latitude,
         'last_known_longitude' => $request->longitude,
+        'fcm_token' => $request->fcm_token ?? $staff->fcm_token,
     ]);
 
     return response()->json(['message' => 'Location updated successfully']);

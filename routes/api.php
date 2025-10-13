@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use App\Models\Staff;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 
 Route::get('/user', function (Request $request) {
@@ -21,20 +23,40 @@ Route::resource('signup', RegistrationController::class)->only(['index', 'store'
 Route::resource('createMedicalStaff', StaffController::class)->only(['index', 'store', 'update', 'destroy']);
 Route::resource('signature', SignatureController::class)->only(['index', 'store', 'update', 'destroy']);
 Route::post('/refresh', [RegistrationController::class, 'refreshToken'])
-->middleware('auth:sanctum');
+    ->middleware('auth:sanctum');
 Route::post('/verifyOtp', [RegistrationController::class, 'verifyOtp'])
-->middleware('auth:sanctum');
+    ->middleware('auth:sanctum');
 Route::get('/me', [UserController::class, 'me'])
-->middleware('auth:sanctum');
+    ->middleware('auth:sanctum');
 Route::post('/update-location', [StaffController::class, 'updateLocation'])
-->middleware('auth:sanctum');
+    ->middleware('auth:sanctum');
 Route::get('/active-staffs', [StaffController::class, 'listActiveStaffs'])
-->middleware('auth:sanctum');
+    ->middleware('auth:sanctum');
 Route::post('/onboard', [UserController::class, 'onboard']);
 
 
-Route::post('/forgot-password', function (Request $request) {
+Route::post('/update-fcm-token', function (Request $request) {
+    $validated = $request->validate([
+        'fcm_token' => 'required|string',
+        'email' => 'required|string|email|max:255',
+    ]);
+
+    $staff = Staff::where('email',$request->email)->first();
     
+    $staff->update([
+        'fcm_token' => $validated['fcm_token'],
+        
+    ]);
+
+    return response()->json([
+        'message' => 'FCM token updated successfully',
+        'token' => $validated['fcm_token']
+    ]);
+})->middleware('auth:sanctum');
+
+
+Route::post('/forgot-password', function (Request $request) {
+
     $validator = Validator::make($request->all(), [
         'email' => 'required|email',
     ]);
@@ -46,7 +68,7 @@ Route::post('/forgot-password', function (Request $request) {
         ], 422);
     }
 
-    
+
     $user = User::where('email', $request->email)->first();
     if (!$user) {
         return response()->json([
@@ -55,7 +77,7 @@ Route::post('/forgot-password', function (Request $request) {
         ], 404);
     }
 
-    
+
     $status = Password::sendResetLink($request->only('email'));
 
     if ($status === Password::RESET_LINK_SENT) {
@@ -65,7 +87,7 @@ Route::post('/forgot-password', function (Request $request) {
         ]);
     }
 
-    
+
     return response()->json([
         'success' => false,
         'message' => 'Unable to send reset link. Please try again later.',
@@ -80,7 +102,7 @@ Route::post('/staff-login', function (Request $request) {
     ]);
 
     $user = User::where('email', $request->email)->first();
-    $isStaff = Staff::where('email', $request->email)->where('is_approved',1)->first();
+    $isStaff = Staff::where('email', $request->email)->where('is_approved', 1)->first();
     if (!$user || !$isStaff || !Hash::check($request->password, $user->password)) {
         return response()->json(['message' => 'Invalid credentials'], 401);
     }
@@ -105,16 +127,153 @@ Route::post('/emergency-help', function (Request $request) {
         'timestamp' => 'required|date',
     ]);
 
-    // Process the emergency request
-    // Notify nearby staff, log the incident, etc.
-    
+    // Get victim's location
+    $victimLat = $validated['latitude'];
+    $victimLon = $validated['longitude'];
+    $victimPhone = $validated['phone'];
+
+    // Get all active staff with location data
+    $staffMembers = Staff::where('is_active', true)
+        ->whereNotNull('last_known_latitude')
+        ->whereNotNull('last_known_longitude')
+        ->get();
+
+    // Calculate distances and find closest staff
+    $staffWithDistances = $staffMembers->map(function ($staff) use ($victimLat, $victimLon) {
+        $distance = calculateDistance(
+            $victimLat,
+            $victimLon,
+            $staff->last_known_latitude,
+            $staff->last_known_longitude
+        );
+
+        return [
+            'staff' => $staff,
+            'distance_km' => $distance
+        ];
+    });
+
+    // Sort by closest distance
+    $sortedStaff = $staffWithDistances->sortBy('distance_km');
+
+    // Get the closest staff member (or multiple)
+    $closestStaff = $sortedStaff->first();
+    $topThreeClosest = $sortedStaff->take(3);
+
+    // Log the emergency incident
+    $emergency = \App\Models\EmergencyHelp::create([
+        'phone' => $victimPhone,
+        'latitude' => $victimLat,
+        'longitude' => $victimLon,
+        'attended_by' => $closestStaff['staff']->id,
+        'closest_staff_distance' => $closestStaff['distance_km'],
+
+    ]);
+
+    // Option 1: Send SMS to closest staff
+    sendEmergencySMS($closestStaff['staff'], $emergency, $closestStaff['distance_km']);
+
+    // Option 2: Make automated call to closest staff
+    makeEmergencyCall($closestStaff['staff'], $emergency);
+
+    // Option 3: Notify multiple closest staff
+    notifyMultipleStaff($topThreeClosest, $emergency);
+
     return response()->json([
-        'message' => 'Help request received',
+        'message' => 'Help request received and closest staff notified',
+        'closest_staff' => [
+            'name' => $closestStaff['staff']->full_name,
+            'phone' => $closestStaff['staff']->phone,
+            'distance_km' => round($closestStaff['distance_km'], 2),
+        ],
+        'emergency_id' => $emergency->id,
         'data' => $validated
     ], 200);
-})
-->middleware('auth:sanctum');
+})->middleware('auth:sanctum');
 
+// Haversine formula to calculate distance in km
+function calculateDistance($lat1, $lon1, $lat2, $lon2)
+{
+    $earthRadius = 6371; // km
 
+    $dLat = deg2rad($lat2 - $lat1);
+    $dLon = deg2rad($lon2 - $lon1);
 
+    $a = sin($dLat / 2) * sin($dLat / 2) +
+        cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+        sin($dLon / 2) * sin($dLon / 2);
 
+    $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+    return $earthRadius * $c;
+}
+
+// Send SMS to staff member
+function sendEmergencySMS($staff, $emergency, $distance)
+{
+    $message = "🚨 EMERGENCY ALERT 🚨\n" .
+        "A person needs immediate assistance!\n" .
+        "Victim Phone: {$emergency->victim_phone}\n" .
+        "Your distance: " . round($distance, 2) . " km\n" .
+        "Location: https://maps.google.com/?q={$emergency->victim_latitude},{$emergency->victim_longitude}\n" .
+        "Time: " . now()->format('Y-m-d H:i:s') . "\n" .
+        "Please respond immediately!";
+
+    // Using Twilio (you'll need to install twilio/sdk)
+    try {
+        Http::withHeaders([
+            'Authorization' => 'Basic ' . base64_encode(env('TWILIO_SID') . ':' . env('TWILIO_TOKEN'))
+        ])->post('https://api.twilio.com/2010-04-01/Accounts/' . env('TWILIO_SID') . '/Messages.json', [
+            'From' => env('TWILIO_PHONE_NUMBER'),
+            'To' => $staff->phone,
+            'Body' => $message
+        ]);
+
+        Log::info("Emergency SMS sent to staff: {$staff->full_name} at {$staff->phone}");
+    } catch (\Exception $e) {
+        Log::error("Failed to send SMS: " . $e->getMessage());
+    }
+}
+
+// Make automated call to staff member
+function makeEmergencyCall($staff, $emergency)
+{
+    $message = "Emergency alert. A person needs immediate assistance. " .
+        "Victim phone number is " . implode(' ', str_split($emergency->victim_phone)) . ". " .
+        "Please check your SMS for location details and respond immediately.";
+
+    try {
+        // Using Twilio for voice calls
+        Http::withHeaders([
+            'Authorization' => 'Basic ' . base64_encode(env('TWILIO_SID') . ':' . env('TWILIO_TOKEN'))
+        ])->post('https://api.twilio.com/2010-04-01/Accounts/' . env('TWILIO_SID') . '/Calls.json', [
+            'From' => env('TWILIO_PHONE_NUMBER'),
+            'To' => $staff->phone,
+            'Url' => route('emergency.voice.message'), // You'd create this route with TwiML
+            'Method' => 'POST'
+        ]);
+
+        Log::info("Emergency call initiated to staff: {$staff->full_name} at {$staff->phone}");
+    } catch (\Exception $e) {
+        Log::error("Failed to make call: " . $e->getMessage());
+    }
+}
+
+// Notify multiple staff members
+function notifyMultipleStaff($staffList, $emergency)
+{
+    foreach ($staffList as $staffData) {
+        $staff = $staffData['staff'];
+        $distance = $staffData['distance_km'];
+
+        sendEmergencySMS($staff, $emergency, $distance);
+
+        // You can also create notifications in your database
+        // \App\Models\StaffNotification::create([
+        //     'staff_id' => $staff->id,
+        //     'emergency_id' => $emergency->id,
+        //     'message' => "Emergency alert - You are " . round($distance, 2) . " km away",
+        //     'is_read' => false,
+        // ]);
+    }
+}

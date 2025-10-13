@@ -13,5 +13,6 @@ class EmergencyHelp extends Model
         'notes',
         'description',
         'attended_by',
+        'closest_staff_distance'
         ];
 }
