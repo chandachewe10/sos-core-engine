@@ -9,6 +9,7 @@ use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class EmergencyAlertEvent implements ShouldBroadcast
 {
@@ -23,22 +24,37 @@ class EmergencyAlertEvent implements ShouldBroadcast
         $this->staff = $staff;
         $this->emergency = $emergency;
         $this->distance = $distance;
+        
+        Log::info('🚨 EmergencyAlertEvent Created', [
+            'staff_id' => $staff->id,
+            'staff_name' => $staff->full_name,
+            'victim_phone' => $emergency->phone,
+            'distance_km' => $distance
+        ]);
     }
 
     public function broadcastOn()
     {
+        $channelName = 'emergency-staff-' . $this->staff->id;
+        
+        Log::info('📡 Broadcasting to channel', [
+            'channel' => $channelName,
+            'staff_id' => $this->staff->id
+        ]);
+        
         // Send to staff-specific channel
-        return new PrivateChannel('emergency-staff-' . $this->staff->id);
+        return new PrivateChannel($channelName);
     }
 
     public function broadcastAs()
     {
+        Log::info('🎯 Broadcasting as event: emergency-alert');
         return 'emergency-alert';
     }
 
     public function broadcastWith()
     {
-        return [
+        $data = [
             'victim_phone' => $this->emergency->phone,
             'latitude' => $this->emergency->latitude,
             'longitude' => $this->emergency->longitude,
@@ -48,5 +64,9 @@ class EmergencyAlertEvent implements ShouldBroadcast
             'message' => '🚨 EMERGENCY: Immediate assistance required!',
             'vibration_pattern' => 'sos' // Indicate unique vibration
         ];
+        
+        Log::info('📦 Broadcast data prepared', $data);
+        
+        return $data;
     }
 }
