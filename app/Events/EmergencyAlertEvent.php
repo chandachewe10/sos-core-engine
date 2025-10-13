@@ -31,7 +31,7 @@ class EmergencyAlertEvent implements ShouldBroadcast
         // Get the user ID from the staff email
         $this->staffUserId = User::where('email', $staff->email)->first()->id;
         
-        $channelName = 'emergency-staff-' . $this->staffUserId;
+        $channelName = 'public-emergency-' . $this->staffUserId; // Changed to public
 
         Log::info('🚨 EmergencyAlertEvent Created', [
             'staff_id' => $this->staff->id,
@@ -46,16 +46,16 @@ class EmergencyAlertEvent implements ShouldBroadcast
 
     public function broadcastOn()
     {
-        $channelName = 'emergency-staff-' . $this->staffUserId;
+        $channelName = 'public-emergency-' . $this->staffUserId; // Changed to public
         
-        Log::info('📡 Broadcasting to channel', [
+        Log::info('📡 Broadcasting to PUBLIC channel', [ // Updated log message
             'channel' => $channelName,
             'staff_id' => $this->staff->id,
             'staff_user_id' => $this->staffUserId
         ]);
         
-        // Send to staff-specific channel
-        return new PrivateChannel($channelName);
+        // Send to staff-specific PUBLIC channel
+        return new Channel($channelName); // Changed from PrivateChannel to Channel
     }
 
     public function broadcastAs()
