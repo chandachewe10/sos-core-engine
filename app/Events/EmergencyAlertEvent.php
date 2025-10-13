@@ -26,12 +26,17 @@ class EmergencyAlertEvent implements ShouldBroadcast
         $this->staff = $staff;
         $this->emergency = $emergency;
         $this->distance = $distance;
-        
+
+        $staffEmail = Staff::findOrFail($this->staff->id);
+        $staffUserId = User::where('email', $staffEmail->email)->first()->id;
+        $channelName = 'emergency-staff-' . $staffUserId;
+
         Log::info('🚨 EmergencyAlertEvent Created', [
-            'staff_id' => $staff->id,
+            'staff_id' =>  $staffUserId,
             'staff_name' => $staff->full_name,
             'victim_phone' => $emergency->phone,
-            'distance_km' => $distance
+            'distance_km' => $distance,
+            'channel' => $channelName
         ]);
     }
 
