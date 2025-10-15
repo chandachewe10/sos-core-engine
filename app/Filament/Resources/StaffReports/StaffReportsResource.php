@@ -23,6 +23,7 @@ class StaffReportsResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = Heroicon::DocumentText;
 
     protected static ?string $recordTitleAttribute = 'StaffReports';
+        protected static string|\UnitEnum|null $navigationGroup = 'Medical Staffs';
 
     public static function form(Schema $schema): Schema
     {
