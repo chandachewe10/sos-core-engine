@@ -349,7 +349,7 @@ class StaffController extends Controller
 
         try {
             $validator = Validator::make($request->all(), [
-                'staff_id' => 'required|exists:staff,id',
+                'staff_id' => 'required|exists:users,id',
                 'case_id' => 'required|string|max:255',
                 'description' => 'required|string|min:10|max:2000',
                 'severity' => 'required|in:low,medium,high,critical',
@@ -365,7 +365,8 @@ class StaffController extends Controller
             }
 
             // Verify that the staff member exists and is approved
-            $staff = \App\Models\Staff::where('id', $request->staff_id)
+            $user = User::find($request->staff_id);
+            $staff = \App\Models\Staff::where('email', $user->email)
                 ->where('is_approved', 1)
                 ->first();
 
@@ -397,7 +398,7 @@ class StaffController extends Controller
             }
 
             $report = StaffReports::create([
-                'staff_id' => $request->staff_id,
+                'staff_id' => $staff->id,
                 'case_id' => $request->case_id,
                 'description' => $request->description,
                 'severity' => $request->severity,
