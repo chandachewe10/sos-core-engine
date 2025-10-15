@@ -241,13 +241,13 @@ class StaffController extends Controller
     /**
      * Return and list Emergency Statuses for each Staff
      */
-    public function listEmergencyStatuses($staffEmail)
+    public function listEmergencyStatuses($staffId)
     {
         try {
             // Validate that the staff exists and is approved
+            $userStaff = User::find($staffId);
 
-
-            $staff = Staff::where('email', $staffEmail)
+            $staff = Staff::where('email', $userStaff->email)
                 ->where('is_approved', 1)
                 ->first();
 
@@ -259,7 +259,7 @@ class StaffController extends Controller
             }
 
             // Get emergency help requests attended by this staff member
-            $emergencyStatuses = EmergencyHelp::where('attended_by', $staff->id)
+            $emergencyStatuses = EmergencyHelp::where('attended_by', $staffId)
                 ->orderBy('created_at', 'desc')
                 ->get([
                     'id',
