@@ -193,32 +193,32 @@ class StaffController extends Controller
 
 
     public function updateLocation(Request $request)
-{
-    $request->validate([
-        'email' => 'required|email',
-        'latitude' => 'required|numeric',
-        'longitude' => 'required|numeric',
-        'fcm_token' => 'sometimes|string',
-    ]);
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+            'fcm_token' => 'sometimes|string',
+        ]);
 
-    $staff = Staff::where('email', $request->email)->first();
+        $staff = Staff::where('email', $request->email)->first();
 
-    if (!$staff) {
-        return response()->json(['message' => 'Staff not found'], 404);
+        if (!$staff) {
+            return response()->json(['message' => 'Staff not found'], 404);
+        }
+
+        $staff->update([
+            'last_known_latitude' => $request->latitude,
+            'last_known_longitude' => $request->longitude,
+            'fcm_token' => $request->fcm_token ?? $staff->fcm_token,
+        ]);
+
+        return response()->json(['message' => 'Location updated successfully']);
     }
 
-    $staff->update([
-        'last_known_latitude' => $request->latitude,
-        'last_known_longitude' => $request->longitude,
-        'fcm_token' => $request->fcm_token ?? $staff->fcm_token,
-    ]);
-
-    return response()->json(['message' => 'Location updated successfully']);
-}
 
 
-
-/**
+    /**
      * Return all active staff with location coordinates
      */
     public function listActiveStaffs()
@@ -242,77 +242,78 @@ class StaffController extends Controller
      * Return and list Emergency Statuses for each Staff
      */
     public function listEmergencyStatuses($staffId)
-{
-    try {
-        // Validate that the staff exists and is approved
-        $staff = Staff::where('id', $staffId)
-            ->where('is_approved', 1)
-            ->first();
+    {
+        try {
+            // Validate that the staff exists and is approved
+            $userStaff = User::find($staffId);
 
-        if (!$staff) {
+            $staff = Staff::where('email', $userStaff->email)
+                ->where('is_approved', 1)
+                ->first();
+
+            if (!$staff) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Staff not found or not approved',
+                ], 404);
+            }
+
+            // Get emergency help requests attended by this staff member
+            $emergencyStatuses = EmergencyHelp::where('attended_by', $staffId)
+                ->orderBy('created_at', 'desc')
+                ->get([
+                    'id',
+                    'phone',
+                    'latitude',
+                    'longitude',
+                    'notes',
+                    'description',
+                    'attended_by',
+                    'closest_staff_distance',
+                    'active',
+                    'completed',
+                    'created_at',
+                    'updated_at'
+                ])
+                ->map(function ($emergency) {
+
+                    if ($emergency->completed) {
+                        $emergency->status = 1;
+                    } elseif ($emergency->active) {
+                        $emergency->status = 1;
+                    } else {
+                        $emergency->status = 1;
+                    }
+
+                    // Add location object expected by React Native
+                    $emergency->location = [
+                        'latitude' => $emergency->latitude,
+                        'longitude' => $emergency->longitude
+                    ];
+
+                    return $emergency;
+                });
+
+            return response()->json([
+                'success' => true,
+                'emergencies' => $emergencyStatuses,
+                'count' => $emergencyStatuses->count(),
+                'staff' => [
+                    'id' => $staff->id,
+                    'full_name' => $staff->full_name,
+                    'phone' => $staff->phone,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching emergency statuses: ' . $e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Staff not found or not approved',
-            ], 404);
+                'message' => 'Failed to fetch emergency statuses',
+                'error' => $e->getMessage(),
+            ], 500);
         }
-
-        // Get emergency help requests attended by this staff member
-        $emergencyStatuses = EmergencyHelp::where('attended_by', $staffId)
-            ->orderBy('created_at', 'desc')
-            ->get([
-                'id',
-                'phone',
-                'latitude',
-                'longitude',
-                'notes',
-                'description',
-                'attended_by',
-                'closest_staff_distance',
-                'active',
-                'completed',
-                'created_at',
-                'updated_at'
-            ])
-            ->map(function ($emergency) {
-              
-                if ($emergency->completed) {
-                    $emergency->status = 1;
-                } elseif ($emergency->active) {
-                    $emergency->status = 1;
-                } else {
-                    $emergency->status = 1;
-                }
-                
-                // Add location object expected by React Native
-                $emergency->location = [
-                    'latitude' => $emergency->latitude,
-                    'longitude' => $emergency->longitude
-                ];
-                
-                return $emergency;
-            });
-
-        return response()->json([
-            'success' => true,
-            'emergencies' => $emergencyStatuses,
-            'count' => $emergencyStatuses->count(),
-            'staff' => [
-                'id' => $staff->id,
-                'full_name' => $staff->full_name,
-                'phone' => $staff->phone,
-            ]
-        ]);
-
-    } catch (\Exception $e) {
-        Log::error('Error fetching emergency statuses: ' . $e->getMessage());
-        
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to fetch emergency statuses',
-            'error' => $e->getMessage(),
-        ], 500);
     }
-}
 
 
     /**
