@@ -42,11 +42,6 @@ class StaffReportsTable
                     ->wrap()
                     ->sortable()
                     ->searchable(),
-                    TextColumn::make('emergencyCase.completed')
-                    ->label('Case Completed')
-                    ->boolean()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
