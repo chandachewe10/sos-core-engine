@@ -376,8 +376,8 @@ class StaffController extends Controller
                 ], 404);
             }
 
-            // Optional: Verify that the case_id exists in emergency_helps table
-            $caseExists = EmergencyHelp::where('id', $request->case_id)->exists();
+            //Verify that the case_id exists in emergency_helps table and is not completed
+            $caseExists = EmergencyHelp::where('id', $request->case_id)->where('completed',"!=",1)->exists();
             if ($caseExists) {
                 // Case exists, we can link it
                 $caseExists = true;
