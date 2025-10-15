@@ -23,7 +23,7 @@ class StaffResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = Heroicon::UserGroup;
 
     protected static ?string $recordTitleAttribute = 'Staffs';
-     protected static string|\UnitEnum|null $navigationGroup = 'Medical Staffs';
+    protected static string|\UnitEnum|null $navigationGroup = 'Medical Staffs';
 
     public static function form(Schema $schema): Schema
     {
