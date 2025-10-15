@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Staff;
 use App\Models\User;
 use App\Models\EmergencyHelp;
+use App\Models\StaffReports;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
@@ -333,6 +334,102 @@ class StaffController extends Controller
         ], 500);
     }
 }
+
+
+
+
+
+/** Submit Incident Report  */
+
+
+
+ public function submitIncidentReport(Request $request)
+    {
+        Log::info('Incident report submission:', $request->all());
+
+        try {
+            $validator = Validator::make($request->all(), [
+                'staff_id' => 'required|exists:staff,id',
+                'case_id' => 'required|string|max:255',
+                'description' => 'required|string|min:10|max:2000',
+                'severity' => 'required|in:low,medium,high,critical',
+                'outcome' => 'nullable|string|max:1000',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            // Verify that the staff member exists and is approved
+            $staff = \App\Models\Staff::where('id', $request->staff_id)
+                ->where('is_approved', 1)
+                ->first();
+
+            if (!$staff) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Staff not found or not approved'
+                ], 404);
+            }
+
+            // Optional: Verify that the case_id exists in emergency_helps table
+            $caseExists = EmergencyHelp::where('id', $request->case_id)->exists();
+            if ($caseExists) {
+                // Case exists, we can link it
+                $caseExists = true;
+                $caseId = EmergencyHelp::where('id', $request->case_id)->first();
+                $caseId->update([
+                    'completed' => 1,
+                    'active' => 0
+                ]);
+            }
+
+            else {
+                // Case does not exist, return error
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid case_id. Emergency case not found.'
+                ], 400);
+            }
+
+            $report = StaffReports::create([
+                'staff_id' => $request->staff_id,
+                'case_id' => $request->case_id,
+                'description' => $request->description,
+                'severity' => $request->severity,
+                'outcome' => $request->outcome,
+            ]);
+
+            Log::info('Incident report created successfully:', ['report_id' => $report->id]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Incident report submitted successfully',
+                'data' => [
+                    'report_id' => $report->id,
+                    'case_id' => $report->case_id,
+                    'severity' => $report->severity,
+                    'created_at' => $report->created_at
+                ]
+            ], 201);
+
+        } catch (\Exception $e) {
+            Log::error('Error creating incident report: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to submit incident report',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+   
+
 
     /**
      * Display the specified resource.

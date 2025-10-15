@@ -36,6 +36,8 @@ Route::get('/active-staffs', [StaffController::class, 'listActiveStaffs'])
 
 Route::get('/emergency_statuses/{id}', [StaffController::class, 'listEmergencyStatuses'])
     ->middleware('auth:sanctum');
+    Route::post('/incident-reports', [StaffController::class, 'submitIncidentReport'])
+    ->middleware('auth:sanctum');
 
 Route::post('/onboard', [UserController::class, 'onboard']);
 
