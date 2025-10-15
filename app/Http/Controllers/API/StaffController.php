@@ -259,7 +259,7 @@ class StaffController extends Controller
             }
 
             // Get emergency help requests attended by this staff member
-            $emergencyStatuses = EmergencyHelp::where('attended_by', $staffId)
+            $emergencyStatuses = EmergencyHelp::where('attended_by', $staff->id)
                 ->orderBy('created_at', 'desc')
                 ->get([
                     'id',
