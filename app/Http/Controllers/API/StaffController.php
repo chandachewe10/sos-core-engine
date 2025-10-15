@@ -241,13 +241,13 @@ class StaffController extends Controller
     /**
      * Return and list Emergency Statuses for each Staff
      */
-    public function listEmergencyStatuses($staffId)
+    public function listEmergencyStatuses($staffEmail)
     {
         try {
             // Validate that the staff exists and is approved
-            $userStaff = User::find($staffId);
 
-            $staff = Staff::where('email', $userStaff->email)
+
+            $staff = Staff::where('email', $staffEmail)
                 ->where('is_approved', 1)
                 ->first();
 
