@@ -33,6 +33,10 @@ Route::post('/update-location', [StaffController::class, 'updateLocation'])
     ->middleware('auth:sanctum');
 Route::get('/active-staffs', [StaffController::class, 'listActiveStaffs'])
     ->middleware('auth:sanctum');
+
+Route::get('/emergency_statuses/{id}', [StaffController::class, 'listEmergencyStatuses'])
+    ->middleware('auth:sanctum');
+
 Route::post('/onboard', [UserController::class, 'onboard']);
 
 
@@ -166,6 +170,7 @@ Route::post('/emergency-help', function (Request $request) {
         'longitude' => $victimLon,
         'attended_by' => $closestStaff['staff']->id,
         'closest_staff_distance' => $closestStaff['distance_km'],
+        'active' => 1
     ]);
 
     // ✅ Trigger the Pusher event with unique vibration
@@ -215,7 +220,7 @@ function sendEmergencySMS($staff, $emergency, $distance)
         "Time: " . now()->format('Y-m-d H:i:s') . "\n" .
         "Please respond immediately!";
 
-    // Using Twilio (you'll need to install twilio/sdk)
+
     try {
         Http::withHeaders([
             'Authorization' => 'Basic ' . base64_encode(env('TWILIO_SID') . ':' . env('TWILIO_TOKEN'))
@@ -229,6 +234,9 @@ function sendEmergencySMS($staff, $emergency, $distance)
     } catch (\Exception $e) {
         Log::error("Failed to send SMS: " . $e->getMessage());
     }
+
+
+
 }
 
             

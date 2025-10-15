@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\Staff;
 use App\Models\User;
+use App\Models\EmergencyHelp;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
@@ -235,6 +236,83 @@ class StaffController extends Controller
             'staffs' => $staffs,
         ]);
     }
+
+
+    /**
+     * Return and list Emergency Statuses for each Staff
+     */
+    public function listEmergencyStatuses($staffId)
+{
+    try {
+        // Validate that the staff exists and is approved
+        $staff = Staff::where('id', $staffId)
+            ->where('is_approved', 1)
+            ->first();
+
+        if (!$staff) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Staff not found or not approved',
+            ], 404);
+        }
+
+        // Get emergency help requests attended by this staff member
+        $emergencyStatuses = EmergencyHelp::where('attended_by', $staffId)
+            ->orderBy('created_at', 'desc')
+            ->get([
+                'id',
+                'phone',
+                'latitude',
+                'longitude',
+                'notes',
+                'description',
+                'attended_by',
+                'closest_staff_distance',
+                'active',
+                'completed',
+                'created_at',
+                'updated_at'
+            ])
+            ->map(function ($emergency) {
+              
+                if ($emergency->completed) {
+                    $emergency->status = 1;
+                } elseif ($emergency->active) {
+                    $emergency->status = 1;
+                } else {
+                    $emergency->status = 1;
+                }
+                
+                // Add location object expected by React Native
+                $emergency->location = [
+                    'latitude' => $emergency->latitude,
+                    'longitude' => $emergency->longitude
+                ];
+                
+                return $emergency;
+            });
+
+        return response()->json([
+            'success' => true,
+            'emergencies' => $emergencyStatuses,
+            'count' => $emergencyStatuses->count(),
+            'staff' => [
+                'id' => $staff->id,
+                'full_name' => $staff->full_name,
+                'phone' => $staff->phone,
+            ]
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Error fetching emergency statuses: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to fetch emergency statuses',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
 
 
     /**
